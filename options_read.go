@@ -129,6 +129,10 @@ func (opts *ReadOptions) SetReadaheadSize(value uint64) {
 	C.rocksdb_readoptions_set_readahead_size(opts.c, C.size_t(value))
 }
 
+func (opts *ReadOptions) SetTotalOrderSeek(value bool) {
+	C.rocksdb_readoptions_set_total_order_seek(opts.c, boolToChar(value))
+}
+
 // Destroy deallocates the ReadOptions object.
 func (opts *ReadOptions) Destroy() {
 	C.rocksdb_readoptions_destroy(opts.c)
