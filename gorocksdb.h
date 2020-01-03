@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include "rocksdb/c.h"
 
+#define TIMERANGE_COMPARATOR_NAME "timerangeComparator"
+#define NETELE_VERSION_COMPARATOR_NAME "versionedElement"
+
 // This API provides convenient C wrapper functions for rocksdb client.
 
 /* Base */
@@ -28,3 +31,7 @@ extern void gorocksdb_mergeoperator_delete_value(void* state, const char* v, siz
 /* Slice Transform */
 
 extern rocksdb_slicetransform_t* gorocksdb_slicetransform_create(uintptr_t idx);
+
+/* Comparator */
+extern rocksdb_comparator_t* nflx_timerange_comparator();
+extern rocksdb_comparator_t* nflx_netele_comparator();

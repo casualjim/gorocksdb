@@ -1,3 +1,4 @@
+#include <memory.h>
 #include "gorocksdb.h"
 #include "_cgo_export.h"
 
@@ -6,7 +7,6 @@
 void gorocksdb_destruct_handler(void* state) { }
 
 /* Comparator */
-
 rocksdb_comparator_t* gorocksdb_comparator_create(uintptr_t idx) {
     return rocksdb_comparator_create(
         (void*)idx,
@@ -61,10 +61,108 @@ void gorocksdb_mergeoperator_delete_value(void* id, const char* v, size_t s) {
 
 rocksdb_slicetransform_t* gorocksdb_slicetransform_create(uintptr_t idx) {
     return rocksdb_slicetransform_create(
-    	(void*)idx,
-    	gorocksdb_destruct_handler,
-    	(char* (*)(void*, const char*, size_t, size_t*))(gorocksdb_slicetransform_transform),
-    	(unsigned char (*)(void*, const char*, size_t))(gorocksdb_slicetransform_in_domain),
-    	(unsigned char (*)(void*, const char*, size_t))(gorocksdb_slicetransform_in_range),
-    	(const char* (*)(void*))(gorocksdb_slicetransform_name));
+        (void*)idx,
+        gorocksdb_destruct_handler,
+        (char* (*)(void*, const char*, size_t, size_t*))(gorocksdb_slicetransform_transform),
+        (unsigned char (*)(void*, const char*, size_t))(gorocksdb_slicetransform_in_domain),
+        (unsigned char (*)(void*, const char*, size_t))(gorocksdb_slicetransform_in_range),
+        (const char* (*)(void*))(gorocksdb_slicetransform_name));
+}
+
+/* Netflix SonarDB helpers */
+
+static int compare_timerange_bytes(void* c, const char* left, size_t szl, const char* right, size_t szr) {
+    // check lengths
+    if (szl == 0 && szr == 0) {
+        return 0;
+    }
+    if (szl == 0 || (szl == 4 && szr == 8)) {
+        return -1;
+    }
+    if (szr == 0 || (szr == 4 && szl == 8)) {
+        return 1;
+    }
+
+    // if the lengths differ, they are likely to be 4 and 8. Shortcut the ones that have length 4
+    int cmp1 = memcmp(right, left, 4);
+    if (cmp1 != 0 || (szr ==4 && szl == 4)) {
+        return cmp1;
+    }
+    if (szr == 4) {
+        return -1;
+    }
+    if (szl == 4) {
+        return 1;
+    }
+    return memcmp(&right[4], &left[4], 4);
+}
+
+static int compare_netele_versions(void* c, const char* left, size_t szl, const char* right, size_t szr) {
+    // These first 3 cases should not actually occur
+    if (szr == 0 && szl == 0) {
+        return 0;
+    }
+    if (szl == 0) {
+        return -1;
+    }
+    if (szr == 0) {
+        return 1;
+    }
+
+    // compare the actual ids
+    int cmp1 = memcmp(left, right, 4);
+    if (cmp1 != 0 || szl == 4) {
+        return cmp1;
+    }
+    if (szl == 4 && szr == 4) {
+        return 0;
+    }
+    if (szl == 4) {
+        return 1;
+    }
+    if (szr == 4) {
+        return -1;
+    }
+
+    // compare start timestamps
+    int cmp2 = memcmp(&right[4], &left[4], 4);
+    if (cmp2 != 0) {
+        return cmp2;
+    }
+
+    if (szr == 8 && szl == 8) {
+        return 0;
+    }
+    if (szl == 8) {
+        return 1;
+    }
+    if (szr == 8) {
+        return -1;
+    }
+    // finally compare the end timestamps
+    return memcmp(&right[8], &left[8], 4);
+}
+
+static const char* timerange_comparator_name(void* v) {
+    return TIMERANGE_COMPARATOR_NAME;
+}
+
+static const char* netele_version_comparator_name(void* v) {
+    return NETELE_VERSION_COMPARATOR_NAME;
+}
+
+rocksdb_comparator_t* nflx_timerange_comparator() {
+    return rocksdb_comparator_create(
+        NULL,
+        NULL,
+        compare_timerange_bytes,
+        timerange_comparator_name);
+}
+
+rocksdb_comparator_t* nflx_netele_comparator() {
+    return rocksdb_comparator_create(
+        NULL,
+        NULL,
+        compare_netele_versions,
+        netele_version_comparator_name);
 }

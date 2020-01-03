@@ -134,6 +134,16 @@ func (opts *Options) SetCompactionFilter(value CompactionFilter) {
 	C.rocksdb_options_set_compaction_filter(opts.c, opts.ccf)
 }
 
+func (opts *Options) SetTimerangeComparator() {
+	opts.ccmp = C.nflx_timerange_comparator()
+	C.rocksdb_options_set_comparator(opts.c, opts.ccmp)
+}
+
+func (opts *Options) SetNeteleVersionComparator() {
+	opts.ccmp = C.nflx_netele_comparator()
+	C.rocksdb_options_set_comparator(opts.c, opts.ccmp)
+}
+
 // SetComparator sets the comparator which define the order of keys in the table.
 // Default: a comparator that uses lexicographic byte-wise ordering
 func (opts *Options) SetComparator(value Comparator) {

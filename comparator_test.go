@@ -39,6 +39,16 @@ func TestComparator(t *testing.T) {
 	ensure.DeepEqual(t, actualKeys, givenKeys)
 }
 
+func TestOptions_SetTimerangeComparator(t *testing.T) {
+	opts := NewDefaultOptions()
+	opts.SetTimerangeComparator()
+}
+
+func TestOptions_SetNeteleVersionComparator(t *testing.T) {
+	opts := NewDefaultOptions()
+	opts.SetNeteleVersionComparator()
+}
+
 type bytesReverseComparator struct{}
 
 func (cmp *bytesReverseComparator) Name() string { return "gorocksdb.bytes-reverse" }
