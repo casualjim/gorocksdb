@@ -1,5 +1,7 @@
 #include <memory.h>
 #include "gorocksdb.h"
+#include "roaring.h"
+#include "rocksdb/c.h"
 #include "_cgo_export.h"
 
 /* Base */
@@ -166,3 +168,65 @@ rocksdb_comparator_t* nflx_netele_comparator() {
         compare_netele_versions,
         netele_version_comparator_name);
 }
+
+char* merge_operator_full_merge_fn (
+    void *state,
+    const char *key, size_t key_length,
+    const char *existing_value, size_t existing_value_length,
+    const char *const *operands_list, const size_t *operands_list_length,
+    int num_operands,
+    unsigned char *success, size_t *new_value_length)
+{
+    roaring_bitmap_t *bmm;
+    if (existing_value_length > 0) {
+        bmm = roaring_bitmap_portable_deserialize(existing_value);
+    } else {
+        bmm = roaring_bitmap_create();
+    }
+
+    for (int i = 0; i < num_operands; i++) {
+      const char *op = operands_list[i];
+        switch (op[0]) {
+        case 1:;
+            uint32_t id_to_add = (op[1] << 24) + (op[2]<<16) + (op[3] << 8) + op[4];
+            roaring_bitmap_add(bmm, id_to_add);
+            *success = 1;
+            break;
+        case 2:;
+            uint32_t id_to_remove = (op[1] << 24) + (op[2]<<16) + (op[3] << 8) + op[4];
+            roaring_bitmap_remove(bmm, id_to_remove);
+            *success = 1;
+            break;
+        }
+    }
+
+    if (roaring_bitmap_is_empty(bmm)) {
+        roaring_bitmap_free(bmm);
+        new_value_length = 0;
+        return NULL;
+    }
+
+    size_t len = roaring_bitmap_portable_size_in_bytes(bmm);
+    char *result = malloc(len);
+    roaring_bitmap_portable_serialize(bmm, result);
+    roaring_bitmap_free(bmm);
+    *success = 1;
+    *new_value_length = len;
+    return result;
+}
+
+const char* merge_operator_name_fn(void *state)
+{
+    return "bitmap_merger";
+}
+
+rocksdb_mergeoperator_t* nflx_bitmap_merger() {
+    return rocksdb_mergeoperator_create(
+        NULL,
+        NULL,
+        merge_operator_full_merge_fn,
+        NULL,
+        NULL,
+        merge_operator_name_fn);
+}
+

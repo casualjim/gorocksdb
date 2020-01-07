@@ -1,6 +1,7 @@
 package gorocksdb
 
 // #include "rocksdb/c.h"
+// #include "roaring.h"
 // #include "gorocksdb.h"
 import "C"
 import (
@@ -142,6 +143,11 @@ func (opts *Options) SetTimerangeComparator() {
 func (opts *Options) SetNeteleVersionComparator() {
 	opts.ccmp = C.nflx_netele_comparator()
 	C.rocksdb_options_set_comparator(opts.c, opts.ccmp)
+}
+
+func (opts *Options) SetBitmapMerger() {
+	opts.cmo = C.nflx_bitmap_merger()
+	C.rocksdb_options_set_merge_operator(opts.c, opts.cmo)
 }
 
 // SetComparator sets the comparator which define the order of keys in the table.
