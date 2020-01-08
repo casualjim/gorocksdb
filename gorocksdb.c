@@ -230,13 +230,13 @@ void merge_operator_destructor_fn(void *state)
 }
 
 rocksdb_mergeoperator_t* nflx_bitmap_merger(char *name) {
-      struct bitmap_merge_operator *state = malloc(sizeof(*state));
-      if (!state) {
-        return NULL;
-      }
+    struct bitmap_merge_operator *state = malloc(sizeof(*state));
+    if (!state) {
+    return NULL;
+    }
 
-      state->name = name;
-      return rocksdb_mergeoperator_create(
+    state->name = name;
+    return rocksdb_mergeoperator_create(
         (void *)state,
         merge_operator_destructor_fn,
         merge_operator_full_merge_fn,
