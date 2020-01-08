@@ -37,4 +37,4 @@ extern rocksdb_comparator_t* nflx_timerange_comparator();
 extern rocksdb_comparator_t* nflx_netele_comparator();
 
 /* Merge Operator */
-extern rocksdb_mergeoperator_t* nflx_bitmap_merger();
+extern rocksdb_mergeoperator_t* nflx_bitmap_merger(char *name);

@@ -49,6 +49,12 @@ func TestOptions_SetNeteleVersionComparator(t *testing.T) {
 	opts.SetNeteleVersionComparator()
 }
 
+func TestOptions_SetBitmapMerger(t *testing.T) {
+	opts := NewDefaultOptions()
+	opts.SetBitmapMerger("the name")
+	ensure.NotNil(t, opts.cmo)
+}
+
 type bytesReverseComparator struct{}
 
 func (cmp *bytesReverseComparator) Name() string { return "gorocksdb.bytes-reverse" }

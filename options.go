@@ -145,8 +145,8 @@ func (opts *Options) SetNeteleVersionComparator() {
 	C.rocksdb_options_set_comparator(opts.c, opts.ccmp)
 }
 
-func (opts *Options) SetBitmapMerger() {
-	opts.cmo = C.nflx_bitmap_merger()
+func (opts *Options) SetBitmapMerger(name string) {
+	opts.cmo = C.nflx_bitmap_merger(C.CString(name))
 	C.rocksdb_options_set_merge_operator(opts.c, opts.cmo)
 }
 

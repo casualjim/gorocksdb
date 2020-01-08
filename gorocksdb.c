@@ -169,6 +169,10 @@ rocksdb_comparator_t* nflx_netele_comparator() {
         netele_version_comparator_name);
 }
 
+typedef struct bitmap_merge_operator {
+    char* name;
+} bitmap_merge_operator;
+
 char* merge_operator_full_merge_fn (
     void *state,
     const char *key, size_t key_length,
@@ -217,12 +221,18 @@ char* merge_operator_full_merge_fn (
 
 const char* merge_operator_name_fn(void *state)
 {
-    return "bitmap_merger";
+    return ((bitmap_merge_operator*)state)->name;
 }
 
-rocksdb_mergeoperator_t* nflx_bitmap_merger() {
-    return rocksdb_mergeoperator_create(
-        NULL,
+rocksdb_mergeoperator_t* nflx_bitmap_merger(char *name) {
+      struct bitmap_merge_operator *state = malloc(sizeof(*state));
+      if (!state) {
+        return NULL;
+      }
+
+      state->name = name;
+      return rocksdb_mergeoperator_create(
+        (void *)state,
         NULL,
         merge_operator_full_merge_fn,
         NULL,
