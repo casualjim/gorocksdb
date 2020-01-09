@@ -174,6 +174,17 @@ typedef struct bitmap_merge_operator {
     const char* name;
 } bitmap_merge_operator;
 
+char* merge_operator_partial_merge(
+    void* state, 
+    const char* key, size_t key_length,
+    const char* const* operands_list, const size_t* operands_list_length, 
+    int num_operands,
+    unsigned char* success, size_t* new_value_length) {
+        *success = 0;
+        *new_value_length = 0;
+        return NULL;
+}
+
 char* merge_operator_full_merge_fn (
     void *state,
     const char *key, size_t key_length,
@@ -256,7 +267,7 @@ rocksdb_mergeoperator_t* nflx_bitmap_merger(char *name) {
         (void *)state,
         merge_operator_destructor_fn,
         merge_operator_full_merge_fn,
-        NULL,
+        merge_operator_partial_merge,
         NULL,
         merge_operator_name_fn);
 }
