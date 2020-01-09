@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <assert.h>
 #include "gorocksdb.h"
 #include "roaring.h"
 #include "rocksdb/c.h"
@@ -78,10 +79,10 @@ static int compare_timerange_bytes(void* c, const char* left, size_t szl, const 
     if (szl == 0 && szr == 0) {
         return 0;
     }
-    if (szl == 0 || (szl == 4 && szr == 8)) {
+    if (szl == 0) {
         return -1;
     }
-    if (szr == 0 || (szr == 4 && szl == 8)) {
+    if (szr == 0) {
         return 1;
     }
 
@@ -170,7 +171,7 @@ rocksdb_comparator_t* nflx_netele_comparator() {
 }
 
 typedef struct bitmap_merge_operator {
-    char* name;
+    const char* name;
 } bitmap_merge_operator;
 
 char* merge_operator_full_merge_fn (
@@ -187,9 +188,20 @@ char* merge_operator_full_merge_fn (
     } else {
         bmm = roaring_bitmap_create();
     }
+    if (!bmm) {
+        printf("no bitmap created\n");
+        new_value_length = 0;
+        return NULL;
+    }
 
-    for (int i = 0; i < num_operands; i++) {
-      const char *op = operands_list[i];
+    for (int i = 0; i < *operands_list_length; i++) {
+        if (!operands_list[i]) {
+            continue;
+        }
+        const char *op = operands_list[i];
+        if (sizeof(op) == 0) {
+            continue;
+        }
         switch (op[0]) {
         case 1:;
             uint32_t id_to_add = (op[1] << 24) + (op[2]<<16) + (op[3] << 8) + op[4];
@@ -207,11 +219,18 @@ char* merge_operator_full_merge_fn (
     if (roaring_bitmap_is_empty(bmm)) {
         roaring_bitmap_free(bmm);
         new_value_length = 0;
+        *success = 0;
         return NULL;
     }
 
     size_t len = roaring_bitmap_portable_size_in_bytes(bmm);
-    char *result = malloc(len);
+    char *result = (char *)calloc(len, sizeof(char));
+    if (!result) {
+        roaring_bitmap_free(bmm);
+        new_value_length = 0;
+        *success = 0;
+        return NULL; 
+    }
     roaring_bitmap_portable_serialize(bmm, result);
     roaring_bitmap_free(bmm);
     *success = 1;
