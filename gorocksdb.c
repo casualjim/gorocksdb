@@ -182,27 +182,21 @@ char* merge_operator_full_merge_fn (
     int num_operands,
     unsigned char *success, size_t *new_value_length)
 {
-    if (num_operands == 0) {
-        new_value_length = &existing_value_length;
-        return (char*)existing_value;
-    }
+    *success = 0;
+    *new_value_length = 0;
+
     roaring_bitmap_t *bmm;
     if (existing_value_length > 0) {
         bmm = roaring_bitmap_portable_deserialize_safe(existing_value, existing_value_length);
     } else {
         bmm = roaring_bitmap_create();
     }
-    if (!bmm) {
-        new_value_length = &existing_value_length;
-        return (char*)existing_value;
-    }
-
     for (int i = 0; i < num_operands; i++) {
         if (!operands_list[i]) {
             continue;
         }
-        const unsigned char *op = operands_list[i];
 
+        const unsigned char *op = operands_list[i];
         switch (op[0]) {
         case 1:;
             uint32_t id_to_add = (uint32_t)op[4] | (uint32_t)op[3] << 8 | (uint32_t)op[2] << 16 | (uint32_t)op[1]<<24;
@@ -220,8 +214,6 @@ char* merge_operator_full_merge_fn (
     if (roaring_bitmap_is_empty(bmm)) {
         roaring_bitmap_free(bmm);
         *success = 1;
-        // new_value_length = &existing_value_length;
-        *new_value_length = 0;
         return NULL;
     }
 
@@ -231,9 +223,8 @@ char* merge_operator_full_merge_fn (
     char *result = malloc(len);
     if (!result) {
         roaring_bitmap_free(bmm);
-        // *success = 0;
-        new_value_length = &existing_value_length;
-        return (char*)existing_value;
+        *new_value_length = 0;
+        return NULL;
     }
     roaring_bitmap_portable_serialize(bmm, result);
     roaring_bitmap_free(bmm);
