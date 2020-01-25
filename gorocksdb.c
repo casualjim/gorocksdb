@@ -224,6 +224,7 @@ char* merge_operator_full_merge_fn (
 
     if (roaring_bitmap_is_empty(bmm)) {
         roaring_bitmap_free(bmm);
+        bmm = NULL;
         *success = 1;
         return NULL;
     }
@@ -234,11 +235,13 @@ char* merge_operator_full_merge_fn (
     char *result = malloc(len);
     if (!result) {
         roaring_bitmap_free(bmm);
+        bmm = NULL;
         *new_value_length = 0;
         return NULL;
     }
     roaring_bitmap_portable_serialize(bmm, result);
     roaring_bitmap_free(bmm);
+        bmm = NULL;
     *success = 1;
     *new_value_length = len;
     return result;
@@ -257,12 +260,13 @@ void merge_operator_destructor_fn(void *state)
 }
 void mergeoperator_delete_value_fn(void* id, const char* v, size_t s) {
     free((char*)v);
+    v = NULL;
 }
 
 rocksdb_mergeoperator_t* nflx_bitmap_merger(char *name) {
     struct bitmap_merge_operator *state = malloc(sizeof(*state));
     if (!state) {
-    return NULL;
+        return NULL;
     }
 
     state->name = name;
